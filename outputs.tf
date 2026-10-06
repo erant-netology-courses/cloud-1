@@ -22,3 +22,18 @@ output "private_vm_internal_ip" {
   value       = yandex_compute_instance.private_vm.network_interface.0.ip_address
   description = "Internal IP address of the private VM (reachable only from within the VPC, e.g. via the public VM)"
 }
+
+
+### cloud-2
+
+output "bucket_url" {
+  value = "https://storage.yandexcloud.net/${yandex_storage_bucket.this.bucket}/image.jpg"
+}
+
+output "nlb_external_ip" {
+  value = [
+    for l in yandex_lb_network_load_balancer.this.listener : [
+      for a in l.external_address_spec : a.address
+    ][0]
+  ][0]
+}

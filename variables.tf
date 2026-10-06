@@ -61,3 +61,24 @@ variable "ssh_public_key_path" {
   default     = "~/.ssh/netology-ya-cloud.pub"
   description = "Path to the SSH public key used to access the created instances"
 }
+
+
+### cloud-2
+
+variable "bucket_name" {
+  type        = string
+  default     = "erant-netology-cloud-2026-10-06"
+  description = "Globally unique Object Storage bucket name"
+}
+
+variable "ig_sa_id" {
+  type        = string
+  default     = "ajeqje7qqolspmd29jej"
+  description = "Service account ID for the Instance Group"
+}
+
+variable "lamp_image_id" {
+  type        = string
+  default     = "fd827b91d99psvq5fjit"
+  description = "LAMP image ID for Instance Group template"
+}

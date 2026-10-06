@@ -115,3 +115,148 @@ resource "yandex_compute_instance" "private_vm" {
 data "yandex_compute_image" "ubuntu" {
   family = "ubuntu-2204-lts"
 }
+
+
+### cloud-2
+
+resource "yandex_storage_bucket" "this" {
+  bucket = var.bucket_name
+}
+
+resource "yandex_storage_bucket_grant" "this" {
+  bucket = yandex_storage_bucket.this.bucket
+
+  grant {
+    uri         = "http://acs.amazonaws.com/groups/global/AllUsers"
+    permissions = ["READ"]
+    type        = "Group"
+  }
+}
+
+resource "yandex_storage_object" "image" {
+  bucket       = yandex_storage_bucket.this.bucket
+  key          = "image.jpg"
+  source       = "./terraform.jpg"
+  content_type = "image/jpeg"
+  acl          = "public-read"
+}
+
+
+resource "yandex_compute_instance_group" "lamp" {
+  name               = "lamp-ig"
+  folder_id          = var.folder_id
+  service_account_id = var.ig_sa_id
+
+  instance_template {
+    platform_id = "standard-v1"
+
+    resources {
+      cores         = 2
+      memory        = 1
+      core_fraction = 5
+    }
+
+    boot_disk {
+      initialize_params {
+        image_id = var.lamp_image_id
+        size     = 10
+        type     = "network-hdd"
+      }
+    }
+
+    network_interface {
+      subnet_ids = [yandex_vpc_subnet.public.id]
+      nat        = true
+    }
+
+    metadata = {
+      ssh-keys = "${var.ssh_user}:${file(pathexpand(var.ssh_public_key_path))}"
+      user-data = <<-EOF
+        #cloud-config
+        write_files:
+          - path: /var/www/html/index.html
+            content: |
+              <!DOCTYPE html>
+              <html>
+                <head><title>LAMP VM</title></head>
+                <body>
+                  <h1>Hello from LAMP instance</h1>
+                  <img src="https://storage.yandexcloud.net/${yandex_storage_bucket.this.bucket}/image.jpg" width="400" alt="image">
+                </body>
+              </html>
+        runcmd:
+          - systemctl restart apache2
+      EOF
+    }
+  }
+
+  scale_policy {
+    fixed_scale {
+      size = 3
+    }
+  }
+
+  allocation_policy {
+    zones = [var.default_zone]
+  }
+
+  deploy_policy {
+    max_unavailable = 1
+    max_expansion   = 0
+  }
+
+  health_check {
+    interval            = 15
+    timeout             = 10
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+
+    http_options {
+      port = 80
+      path = "/"
+    }
+  }
+}
+
+resource "yandex_lb_target_group" "lamp" {
+  name      = "lamp-tg"
+  folder_id = var.folder_id
+
+  dynamic "target" {
+    for_each = yandex_compute_instance_group.lamp.instances
+    content {
+      subnet_id = yandex_vpc_subnet.public.id
+      address   = target.value.network_interface[0].ip_address
+    }
+  }
+}
+
+resource "yandex_lb_network_load_balancer" "this" {
+  name      = "lamp-nlb"
+  folder_id = var.folder_id
+
+  listener {
+    name        = "http"
+    port        = 80
+    target_port = 80
+    external_address_spec {
+      ip_version = "ipv4"
+    }
+  }
+
+  attached_target_group {
+    target_group_id = yandex_lb_target_group.lamp.id
+
+    healthcheck {
+      name = "http"
+      http_options {
+        port = 80
+        path = "/"
+      }
+      interval            = 15
+      timeout             = 10
+      healthy_threshold   = 3
+      unhealthy_threshold = 3
+    }
+  }
+}
