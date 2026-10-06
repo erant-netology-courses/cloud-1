@@ -1,9 +1,13 @@
 # cloud-1
 
-Накатил Terraform:
+Картинка в storage:
 
-<img width="680" height="760" alt="image" src="https://github.com/erant-netology-courses/cloud-1/blob/main/terraform.jpg?raw=true" />
+<img width="580" height="560" alt="image" src="https://github.com/erant-netology-courses/cloud-1/blob/cloud-2/image-in-storage.jpg?raw=true" />
 
-Пинганул интернет:
+Балансер поднял вручную удаленный сервис:
 
-<img width="980" height="760" alt="image" src="https://github.com/erant-netology-courses/cloud-1/blob/main/final.jpg?raw=true" />
+<img width="480" height="360" alt="image" src="https://github.com/erant-netology-courses/cloud-1/blob/cloud-2/nlb-up.jpg?raw=true" />
+
+Вот все работает:
+
+<img width="680" height="660" alt="image" src="https://github.com/erant-netology-courses/cloud-1/blob/cloud-2/final_2.jpg?raw=true" />
