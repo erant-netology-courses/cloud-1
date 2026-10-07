@@ -119,9 +119,9 @@ data "yandex_compute_image" "ubuntu" {
 
 ### cloud-2
 
-resource "yandex_storage_bucket" "this" {
-  bucket = var.bucket_name
-}
+# resource "yandex_storage_bucket" "this" {
+#   bucket = var.bucket_name
+# }
 
 resource "yandex_storage_bucket_grant" "this" {
   bucket = yandex_storage_bucket.this.bucket
@@ -257,6 +257,29 @@ resource "yandex_lb_network_load_balancer" "this" {
       timeout             = 10
       healthy_threshold   = 3
       unhealthy_threshold = 3
+    }
+  }
+}
+
+
+### cloud-3
+
+resource "yandex_kms_symmetric_key" "bucket" {
+  name              = "bucket-key"
+  default_algorithm = "AES_128"
+  rotation_period   = "8760h"
+  description       = "KMS key for Object Storage bucket encryption"
+}
+
+resource "yandex_storage_bucket" "this" {
+  bucket = var.bucket_name
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        kms_master_key_id = yandex_kms_symmetric_key.bucket.id
+        sse_algorithm     = "aws:kms"
+      }
     }
   }
 }
