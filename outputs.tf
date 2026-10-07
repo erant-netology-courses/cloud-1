@@ -48,3 +48,7 @@ output "mysql_cluster_id" {
 output "mysql_hosts" {
   value = yandex_mdb_mysql_cluster.this.host[*].fqdn
 }
+
+output "k8s_cluster_id" {
+  value = yandex_kubernetes_cluster.this.id
+}

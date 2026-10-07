@@ -10,6 +10,14 @@
 
 <img width="780" height="460" alt="image" src="https://github.com/erant-netology-courses/cloud-1/blob/main/4_yc_mysql.jpg?raw=true" />
 
+Кластер создался в терраформе:
+
+<img width="780" height="460" alt="image" src="https://github.com/erant-netology-courses/cloud-1/blob/main/4_cluster_done.jpg?raw=true" />
+
+kubectl отработал:
+
+<img width="780" height="460" alt="image" src="https://github.com/erant-netology-courses/cloud-1/blob/main/4_kubectl.jpg?raw=true" />
+
 ## Cloud 3
 
 Шифрование содержимого бакета отработало:

@@ -349,3 +349,126 @@ resource "yandex_mdb_mysql_user" "app" {
     roles         = ["ALL"]
   }
 }
+
+resource "yandex_vpc_subnet" "public_b" {
+  name           = "public-b"
+  zone           = var.extra_zone
+  network_id     = yandex_vpc_network.this.id
+  v4_cidr_blocks = var.public_subnet_cidr_b
+}
+
+resource "yandex_vpc_subnet" "public_d" {
+  name           = "public-d"
+  zone           = var.extra_zone_d
+  network_id     = yandex_vpc_network.this.id
+  v4_cidr_blocks = var.public_subnet_cidr_d
+}
+
+
+resource "yandex_iam_service_account" "k8s" {
+  name = "k8s-sa"
+}
+
+resource "yandex_resourcemanager_folder_iam_member" "k8s_roles" {
+  for_each = toset([
+    "k8s.clusters.agent",
+    "vpc.publicAdmin",
+    "load-balancer.admin",
+    "kms.keys.encrypterDecrypter",
+    "container-registry.images.puller",
+  ])
+  folder_id = var.folder_id
+  role      = each.key
+  member    = "serviceAccount:${yandex_iam_service_account.k8s.id}"
+}
+
+resource "yandex_kubernetes_cluster" "this" {
+  name        = "netology-k8s"
+  description = "Regional K8s cluster"
+  network_id  = yandex_vpc_network.this.id
+
+  master {
+    version = "1.32"
+    public_ip = true
+
+    regional {
+      region = "ru-central1"
+      dynamic "location" {
+        for_each = [
+          yandex_vpc_subnet.public,
+          yandex_vpc_subnet.public_b,
+          yandex_vpc_subnet.public_d,
+        ]
+        content {
+          zone      = location.value.zone
+          subnet_id = location.value.id
+        }
+      }
+    }
+
+    maintenance_policy {
+      auto_upgrade = true
+      maintenance_window {
+        day        = "saturday"
+        start_time = "03:00"
+        duration   = "3h"
+      }
+    }
+  }
+
+  service_account_id      = yandex_iam_service_account.k8s.id
+  node_service_account_id = yandex_iam_service_account.k8s.id
+
+  kms_provider {
+    key_id = yandex_kms_symmetric_key.bucket.id
+  }
+
+  release_channel = "STABLE"
+
+  depends_on = [
+    yandex_resourcemanager_folder_iam_member.k8s_roles,
+  ]
+}
+
+resource "yandex_kubernetes_node_group" "workers" {
+  cluster_id = yandex_kubernetes_cluster.this.id
+  name       = "workers"
+  version    = "1.32"
+
+  instance_template {
+    platform_id = "standard-v3"
+
+    resources {
+      cores  = 2
+      memory = 2
+    }
+
+    boot_disk {
+      type = "network-hdd"
+      size = 60
+    }
+
+    network_interface {
+      nat        = false
+      subnet_ids = [yandex_vpc_subnet.public.id]
+    }
+
+    container_runtime {
+      type = "containerd"
+    }
+  }
+
+  scale_policy {
+    auto_scale {
+      min     = 3
+      max     = 6
+      initial = 3
+    }
+  }
+
+  allocation_policy {
+    location {
+      zone = "ru-central1-a"
+    }
+  }
+}

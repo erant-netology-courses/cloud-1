@@ -101,3 +101,21 @@ variable "mysql_password" {
   type      = string
   sensitive = true
 }
+
+variable "extra_zone_d" {
+  type        = string
+  default     = "ru-central1-d"
+  description = "https://cloud.yandex.ru/docs/overview/concepts/geo-scope"
+}
+
+variable "public_subnet_cidr_b" {
+  type        = list(string)
+  default     = ["192.168.11.0/24"]
+  description = "CIDR block for the public subnet"
+}
+
+variable "public_subnet_cidr_d" {
+  type        = list(string)
+  default     = ["192.168.12.0/24"]
+  description = "CIDR block for the public subnet"
+}
