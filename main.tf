@@ -283,3 +283,69 @@ resource "yandex_storage_bucket" "this" {
     }
   }
 }
+
+### cloud-4
+
+resource "yandex_vpc_subnet" "private_b" {
+  name           = "private-b"
+  zone           = var.extra_zone
+  network_id     = yandex_vpc_network.this.id
+  v4_cidr_blocks = var.extra_private_subnet_cidr
+  route_table_id = yandex_vpc_route_table.private.id
+}
+
+resource "yandex_mdb_mysql_cluster" "this" {
+  name                = "netology-mysql"
+  environment         = "PRESTABLE"
+  network_id          = yandex_vpc_network.this.id
+  version             = "8.0"
+  deletion_protection = true
+
+  maintenance_window {
+    type = "WEEKLY"
+    day  = "SAT"
+    hour = 3
+  }
+
+  backup_window_start {
+    hours   = 23
+    minutes = 59
+  }
+
+  resources {
+    resource_preset_id = "b1.medium"
+    disk_type_id       = "network-hdd"
+    disk_size          = 20
+  }
+
+  host {
+    zone      = "ru-central1-a"
+    subnet_id = yandex_vpc_subnet.private.id
+  }
+
+  host {
+    zone      = "ru-central1-b"
+    subnet_id = yandex_vpc_subnet.private_b.id
+  }
+
+  host {
+    zone      = "ru-central1-a"
+    subnet_id = yandex_vpc_subnet.private.id
+  }
+}
+
+resource "yandex_mdb_mysql_database" "netology" {
+  cluster_id = yandex_mdb_mysql_cluster.this.id
+  name       = "netology_db"
+}
+
+resource "yandex_mdb_mysql_user" "app" {
+  cluster_id = yandex_mdb_mysql_cluster.this.id
+  name       = "netology_db"
+  password   = var.mysql_password
+
+  permission {
+    database_name = yandex_mdb_mysql_database.netology.name
+    roles         = ["ALL"]
+  }
+}

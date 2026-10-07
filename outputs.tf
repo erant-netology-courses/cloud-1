@@ -37,3 +37,14 @@ output "nlb_external_ip" {
     ][0]
   ][0]
 }
+
+
+### cloud-4
+
+output "mysql_cluster_id" {
+  value = yandex_mdb_mysql_cluster.this.id
+}
+
+output "mysql_hosts" {
+  value = yandex_mdb_mysql_cluster.this.host[*].fqdn
+}

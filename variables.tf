@@ -82,3 +82,22 @@ variable "lamp_image_id" {
   default     = "fd827b91d99psvq5fjit"
   description = "LAMP image ID for Instance Group template"
 }
+
+### cloud-4
+
+variable "extra_zone" {
+  type        = string
+  default     = "ru-central1-b"
+  description = "https://cloud.yandex.ru/docs/overview/concepts/geo-scope"
+}
+
+variable "extra_private_subnet_cidr" {
+  type        = list(string)
+  default     = ["192.168.30.0/24"]
+  description = "CIDR block for the private subnet"
+}
+
+variable "mysql_password" {
+  type      = string
+  sensitive = true
+}
